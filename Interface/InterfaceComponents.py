@@ -1,7 +1,7 @@
 import customtkinter
 from PIL import Image, ImageTk
 from ExpertSystem import GetRecommendations
-
+from Database import Database
 class ScrollableCheckBoxFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, item_list, command=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -39,11 +39,19 @@ class ScrollableResultFrame(customtkinter.CTkScrollableFrame):
             for i, item in enumerate(item_list):
                 self.add_item(item)
     def add_item(self, item):
+        
+        plantData = [plant for plant in Database['plants'] if plant['name'] == str(list(item.values())[0])]
+        if(len(plantData) == 0):
+            print("Item not found in the database")
+            return
+        plantData = plantData[0]
+        if len(plantData) == 0:
+            return
         result = ResultFrame(
             self,
-            plant_name="Sunflower",
-            plant_description="Sunflowers are tall plants with large yellow flowers. They are known for turning their heads to follow the sun.",
-            image_path="sunflower.jpg"
+            plant_name=plantData.get("name"),
+            plant_description=plantData.get("description"),
+            image_path=plantData.get("image_path")
         )
         if self.command is not None:
             result.configure(command=self.command)
@@ -123,13 +131,9 @@ class OutputFrame(customtkinter.CTkFrame):
         self.grid_rowconfigure(0, weight=1) 
         self.grid_columnconfigure(0, weight=1) 
         
-        result_frame = ResultFrame(
-            self,
-            plant_name="Sunflower",
-            plant_description="Sunflowers are tall plants with large yellow flowers. They are known for turning their heads to follow the sun.",
-            image_path="sunflower.jpg"
-        )
-        result_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nwe")
+        scrolableframe = ScrollableResultFrame(self, item_list=[])
+        scrolableframe.grid(row=0, column=0, padx=15, pady=15, sticky="nsew")
+
         
         button = customtkinter.CTkButton(self, text="Get Recommendations", font=('Arial', 20, 'bold'), command=self.get_recommendations)
         button.grid(row=1, column=0, padx=10, pady=10, sticky="nwe")
@@ -142,11 +146,9 @@ class OutputFrame(customtkinter.CTkFrame):
         self.grid_rowconfigure(0, weight=1) 
         #get the recomandations
         agenda = self.master.leftframe.getAgenda()
-        print(agenda)
         recomandations = GetRecommendations(agenda["PHLevel"],agenda["Temperature"],agenda["Precipitation"],agenda["Drainage"],agenda["Nutrients"])
-        print(recomandations)
+        
         #diplay the recomandations
-        i = 0
         
         scrolableframe = ScrollableResultFrame(self, item_list=recomandations)
         scrolableframe.grid(row=0, column=0, padx=15, pady=15, sticky="nsew")
@@ -177,8 +179,8 @@ class ResultFrame(customtkinter.CTkFrame):
 
         # Create a label for the plant's description
         self.description_label = customtkinter.CTkLabel(self, text=plant_description)
-        self.description_label.grid(row=1, column=0, sticky='wn', padx=10, pady=5)
-
+        self.description_label.grid(row=1, column=0, padx=10, pady=5, sticky='w')
+        self.description_label.configure(wraplength=1200, anchor='w', justify='left')
         
     
 

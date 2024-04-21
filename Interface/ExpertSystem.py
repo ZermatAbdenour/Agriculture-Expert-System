@@ -1,5 +1,6 @@
 from aima3.utils import expr
 from aima3.logic import FolKB, fol_fc_ask
+from Database import Database
 
 #PH Levels
 def PHLevel(kb,value): #Value is in Celsius
@@ -48,9 +49,7 @@ def Precipitation(kb,value):#value is in cm
         
     return expr(f'Precipitation({Class})')
 
-#Categories
-categories = ['Citrus']
-
+#Get the Best recommendations with the inputs that the user enters
 def GetRecommendations(PHLevelvalue,Temperaturevalue,Precipitationvalue,Drainagevalue,Nutrientsvalue):
     print(PHLevelvalue,Temperaturevalue,Precipitationvalue,Drainagevalue,Nutrientsvalue)
     kb = FolKB()
@@ -79,7 +78,7 @@ def GetRecommendations(PHLevelvalue,Temperaturevalue,Precipitationvalue,Drainage
         kb.tell(p)
         results = list(fol_fc_ask(kb, expr('CanPlant(x)')))
         for result in results:
-            if result.get('x') in categories:
+            if result.get('x') in Database['categories']:
                 agenda.append(expr(f'CanPlantCategory({result})'))
             else:
                 if(result not in memory):
@@ -90,25 +89,70 @@ def GetRecommendations(PHLevelvalue,Temperaturevalue,Precipitationvalue,Drainage
         
         
 def DefineRules(kb):
-    # Rice
-    kb.tell(expr('PHLevel(Acidic) & (Drainage(Poor) or Drainage(Moderate)) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Rice)'))
+    # Grains
+    kb.tell(expr('PHLevel(Acidic) ==> CanPlantCategory(Grains)'))
+    #cruciferous_vegetables
+    kb.tell(expr('PHLevel(Acidic) or PHLevel(Neutral) ==> CanPlantCategory(CruciferousVegetables)'))
+    #leafy_greens
+    kb.tell(expr('PHLevel(Acidic) or PHLevel(Neutral) ==> CanPlantCategory(LeafyGreens)'))
+    #Citrus_Fruits
+    #kb.tell(expr('PHLevel(Acidic) or PHLevel(Neutral) ==> CanPlantCategory(CitrusFruits)'))
+    #root_vegetables
+    kb.tell(expr('PHLevel(Acidic) ==> CanPlantCategory(RootVegetables)'))
+    #legumes
+    kb.tell(expr('PHLevel(Acidic) or PHLevel(Neutral) ==> CanPlantCategory(Legumes)'))
+    #Nightshade Vegetables
+    kb.tell(expr('PHLevel(Acidic) or PHLevel(Neutral) ==> CanPlantCategory(NightshadeVegetables)'))
 
-    kb.tell(expr('PHLevel(Acidic) & Nutrient(Phosphorus) ==> CanPlantCategory(Citrus)'))
-    kb.tell(expr('CanPlantCategory(Citrus) & Nutrient(Potassium) ==> CanPlant(Lemon)'))
+
+    #temperature rules
+
+    #temperature rules
+    kb.tell(expr('Temperature(Low) ==> CanPlantCategory(LeafyGreens)'))
+    kb.tell(expr('Temperature(Low) ==> CanPlantCategory(RootVegetables)'))
+    kb.tell(expr('Temperature(Low) ==> CanPlantCategory(LeafyGreens)'))
+    kb.tell(expr('Temperature(Moderate) ==> CanPlantCategory(Legumes)'))
+    #kb.tell(expr('Temperature(High) ==> CanPlantCategory(Citrus)'))
+    kb.tell(expr('Temperature(Moderate) ==> CanPlantCategory(Grains)'))
+
+    #precipitation rules
+    kb.tell(expr('Precipitation(Low) ==> CanPlantCategory(LeafyGreens)'))
+    kb.tell(expr('Precipitation(Low) ==> CanPlantCategory(RootVegetables)'))
+    kb.tell(expr('Precipitation(High) or Precipitation(Moderate) ==> CanPlantCategory(CruciferousVegetables)'))
+    kb.tell(expr('Precipitation(Moderate) ==> CanPlantCategory(Legumes)'))
+    kb.tell(expr('Precipitation(Moderate) ==> CanPlantCategory(Grains)'))
+
+    #drainage rules
+    kb.tell(expr('Drainage(Poor) ==> CanPlantCategory(Legumes)'))
+    kb.tell(expr('Drainage(Moderate) ==> CanPlantCategory(RootVegetables)'))
+    kb.tell(expr('Drainage(Well) ==> CanPlantCategory(CruciferousVegetables)'))
+
+    #nutrient rules
+    #kb.tell(expr('Nutrient(Nitrogen) ==> CanPlantCategory(Legumes)'))
+    kb.tell(expr('Nutrient(Phosphorus) ==> CanPlantCategory(RootVegetables)'))
+    kb.tell(expr('Nutrient(Potassium) ==> CanPlantCategory(CruciferousVegetables)'))
+
+    #Plants rules
+
+    # Rice
+    kb.tell(expr(' CanPlantCategory(Grains) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Rice)'))
     # Wheat
     kb.tell(expr('(PHLevel(Neutral) or PHLevel(Alkaline)) & Drainage(Well) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) & Nutrient(Sulfur) ==> CanPlant(Wheat)'))
 
     # Corn
-    kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral)) & Drainage(Well) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Corn)'))
+    kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral)) & Drainage(Well) &  CanPlantCategory(Grains) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Corn)'))
+
+    #Broccoli
+    kb.tell(expr('CanPlantCategory(CruciferousVegetables) & Tempurature(Moderate) ==> CanPlant(Broccolli)'))
 
     # Soybeans
     kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral) or PHLevel(Alkaline)) & (Drainage(Moderate) or Drainage(Well)) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Soybeans)'))
 
     # Potatoes
-    kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral)) & Drainage(Moderate) & Temperature(Low) & Precipitation(High) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) & Nutrient(Calcium) ==> CanPlant(Potatoes)'))
+    kb.tell(expr('CanPlantCategory(LeafyGreens) & Drainage(Moderate) & Precipitation(High) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) & Nutrient(Calcium) ==> CanPlant(Potatoes)'))
 
     # Tomato
-    kb.tell(expr('PHLevel(Acidic) & Drainage(Well) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) & Nutrient(Calcium) ==> CanPlant(Tomato)'))
+    kb.tell(expr('PHLevel(Acidic) & Drainage(Well) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) ==> CanPlant(Tomato)'))
 
     # Carrot
     kb.tell(expr('(PHLevel(Neutral) or PHLevel(Acidic)) & Drainage(Moderate) & Temperature(Moderate) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Carrot)'))
@@ -120,4 +164,5 @@ def DefineRules(kb):
     kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral)) & Drainage(Moderate) & Temperature(Low) & Precipitation(High) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) & Nutrient(Calcium) ==> CanPlant(Cabbage)'))
 
     # Spinach
-    kb.tell(expr('(PHLevel(Acidic) or PHLevel(Neutral)) & Drainage(Moderate) & Temperature(Low) & Precipitation(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Spinach)'))
+    kb.tell(expr('CanPlantCategory(LeafyGreens) & Drainage(Moderate) & Nutrient(Nitrogen) & Nutrient(Phosphorus) & Nutrient(Potassium) ==> CanPlant(Spinach)'))
+
